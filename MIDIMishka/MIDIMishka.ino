@@ -3,7 +3,7 @@
  *
  *
  * Author: Mishka & Mishka
- 
+ * Use it wisely
  */ 
 
 #include "MIDIUSB.h"
