@@ -28,11 +28,8 @@ byte knobsCount = sizeof(pinToKnobMap);
 
 void setup() {
   Serial.begin(115200);
-  DDRD = B11111111; // set PORTD (digital 7~0) to outputs
-
-
-  PORTD = B11110000;
 }
+
 // First parameter is the event type (0x09 = note on, 0x08 = note off).
 // Second parameter is note-on/note-off, combined with the channel.
 // Channel can be anything between 0-15. Typically reported to the user as 1-16.
