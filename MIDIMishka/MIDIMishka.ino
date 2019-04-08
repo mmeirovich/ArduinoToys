@@ -22,6 +22,7 @@ typedef struct{
 pinToControl pinToButtonMap[] = {{5, 0, 20}, {6, 0, 21}, {7, 0, 22}, {8, 0, 23}, {9, 0, 24}};
 pinToControl pinToKnobMap[] = {{18, 0, 25}, {19, 0, 26}, {20, 0, 27}, {21, 0, 28}, {10, 0, 29}};
 
+// IMPORTANT!!!! When using pin 4 as analog, don't call it 4. Call it A6, which is the same as 24. Why? Nobody knows.
 
 byte buttonsCount = 5;
 byte knobsCount = 5;
