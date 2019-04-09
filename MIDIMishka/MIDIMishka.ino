@@ -20,7 +20,8 @@ typedef struct{
   byte control;
 } pinToControl;
 
-pinToControl pinToButtonMap[] = {{2, 0, 20}, {3, 0, 21}, {14, 0, 22}, {15, 0, 23}, {16, 0, 24}};
+
+pinToControl pinToButtonMap[] = {{5, 0, 20}, {6, 0, 21}, {7, 0, 22}, {8, 0, 23}, {9, 0, 24}};
 pinToControl pinToKnobMap[] = {{18, 0, 25}, {19, 0, 26}, {20, 0, 27}, {21, 0, 28}, {10, 0, 29}};
 
 pinToControl externalPedalMap = {4, 0, 30};
