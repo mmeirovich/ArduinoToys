@@ -32,7 +32,7 @@ byte knobsCount = 5;
 
 
 void setup() {
-  delay(4000);
+  delay(1000);
   Serial.begin(9600);
 }
 
@@ -173,6 +173,4 @@ void loop() {
     Serial.println(externalPedalMap.pin);
     sendValueChange(externalPedalMap.control, midiValue);
   }   
-
-  delay(1000);
 }
