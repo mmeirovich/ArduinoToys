@@ -2,7 +2,7 @@
  * MIDIMishka
  *
  *
- * Author: Mishka & Mishka
+ * Authors: Mishka & Mishka
  * Use it wisely
  */ 
 
@@ -10,6 +10,8 @@
 
 
 #define KNOB_MAX 1023
+
+#define PEDAL_MAX 1023
 #define MIDI_MAX 127
 
 typedef struct{
@@ -21,13 +23,15 @@ typedef struct{
 pinToControl pinToButtonMap[] = {{2, 0, 20}, {3, 0, 21}, {14, 0, 22}, {15, 0, 23}, {16, 0, 24}};
 pinToControl pinToKnobMap[] = {{18, 0, 25}, {19, 0, 26}, {20, 0, 27}, {21, 0, 28}, {10, 0, 29}};
 
+pinToControl externalPedalMap = {4, 0, 30};
+
 byte buttonsCount = 5;
 byte knobsCount = 5;
 
 
 
 void setup() {
-  delay(5000);
+  delay(8000);
   Serial.begin(9600);
 }
 
@@ -92,6 +96,13 @@ byte knobToMidiKnob(int knobValue){
   return knobValue / relation;  
 }
 
+
+byte pedalToMidiKnob(int knobValue){
+  double relation = PEDAL_MAX / MIDI_MAX;
+  return knobValue / relation;  
+}
+
+
 void loop() {
   // read buttons
   Serial.println("reading buttons"); 
@@ -134,5 +145,16 @@ void loop() {
     logPinWithInput(pinToKnobMap[i].pin, pinValue);
   }
 
-    delay(1000);
+  Serial.println("reading external pedal");
+  int pinValue = analogRead(externalPedalMap.pin);
+  if (pinValue != externalPedalMap.pinValue){
+    externalPedalMap.pinValue = pinValue;
+
+    byte midiValue = knobToMidiKnob(pinValue);
+    Serial.print(" from pin ");
+    Serial.print(externalPedalMap.pin);
+    sendValueChange(externalPedalMap.control, midiValue);
+  }   
+
+  delay(1000);
 }
