@@ -11,7 +11,7 @@
 
 #define KNOB_MAX 1023
 
-#define PEDAL_MAX 1023
+#define PEDAL_MAX 991
 #define MIDI_MAX 127
 
 typedef struct{
@@ -66,7 +66,7 @@ void controlChange(byte channel, byte control, byte value) {
 // Sends 127 to channel 0 to a given control.
 // Use it for stateless buttons
 void sendButtonPress(byte control, int value){
-  Serial.print("      sending button press"); 
+  //Serial.print("      sending button press"); 
     controlChange(0, control, 127*value);
     MidiUSB.flush();
 }
@@ -74,10 +74,10 @@ void sendButtonPress(byte control, int value){
 // Sends given value to channel 0 of a given control
 // Use it for sliders & potentiometers
 void sendValueChange(byte control, byte value){
-  Serial.print("send value change: control ");
-  Serial.print(control);
-  Serial.print(" value ");
-  Serial.println(value);
+    Serial.print("send value change: control ");
+    Serial.print(control);
+    Serial.print(" value ");
+    Serial.println(value);
     controlChange(0, control, value);    
     MidiUSB.flush();
 }
@@ -94,10 +94,21 @@ void logPinWithInput(byte pin, int value){
 
 
 byte expressionPedalToMidiKnob(int knobValue){
-  double relation = KNOB_MAX / MIDI_MAX;
+  
+  static double relation = (double)PEDAL_MAX / (double)MIDI_MAX;
+
+  Serial.print(" source pin value ");
+  Serial.println(knobValue);     
+  Serial.print(" relation ");
+  Serial.println(relation);     
+  Serial.print(" in brackets ");
+  Serial.println(PEDAL_MAX - knobValue);     
+
+  Serial.print(" sending back ");
+  Serial.println((PEDAL_MAX - knobValue) / relation);     
 
   // our expression pedal when down shows MIDI_MAX and when up shows 0. That's just how it is.
-  return (KNOB_MAX - knobValue) / relation;  
+  return round(double(PEDAL_MAX - knobValue) / relation);  
 }
 
 
@@ -108,47 +119,53 @@ byte knobToMidiKnob(int knobValue){
 }
 
 
-byte pedalToMidiKnob(int knobValue){
-  double relation = PEDAL_MAX / MIDI_MAX;
-  return knobValue / relation;  
+// return true if two values have a serious gap between them, in our case 2 or more
+// solves the problem of false knob values changes that we discovered while experimenting
+bool valueSignificantlyDifferent(int value1, int value2){
+
+  if (value1 != value2){
+    return abs(value1-value2) > 3;
+  }
+  return false;
 }
 
 
 void loop() {
   
   // read buttons
-//  Serial.println("");
-//  Serial.println("reading buttons"); 
+  Serial.println("");
+  Serial.println("reading buttons"); 
 
   for (int i=0; i<buttonsCount; i++){
     int pinValue = digitalRead(pinToButtonMap[i].pin);
     
     if (pinValue != pinToButtonMap[i].pinValue){
      
-      Serial.print(" pin value changed"); 
+      Serial.println(" button value changed"); 
       pinToButtonMap[i].pinValue = pinValue;
 
       logPinWithInput(pinToButtonMap[i].pin, pinValue);
       sendButtonPress(pinToButtonMap[i].control, pinValue);  
-                 
+      delay(50); // to try to avoid current leakage to the analog pins
     }
     
   }
 
-//  Serial.println("");
-//  Serial.println("reading knobs"); 
+  Serial.println("");
+  Serial.println("reading knobs"); 
   // read knobs
   for (int i=0; i<knobsCount; i++){
     
     int pinValue = analogRead(pinToKnobMap[i].pin);
-    if (pinValue != pinToKnobMap[i].pinValue){
-      Serial.print(" from pin ");
+    if (valueSignificantlyDifferent(pinValue, pinToKnobMap[i].pinValue)){
+      Serial.println("KNOB");
+      Serial.print(" knob value changed. from pin ");
       Serial.println(pinToKnobMap[i].pin);
       Serial.print(" previous value ");
       Serial.println(pinToKnobMap[i].pinValue);      
       Serial.print(" new value ");
       Serial.println(pinValue);      
-
+      Serial.println("END KNOB");
       
       pinToKnobMap[i].pinValue = pinValue;
   
@@ -156,21 +173,28 @@ void loop() {
       logPinWithInput(pinToKnobMap[i].pin, pinValue);
       
       sendValueChange(pinToKnobMap[i].control, midiValue);
+      
     }
     
     
   }
 
-//  Serial.println("");
-//  Serial.println("reading external expression pedal");
+  Serial.println("");
+  Serial.println("reading external expression pedal");
+
+
   int pinValue = analogRead(externalPedalMap.pin);
-  if (pinValue != externalPedalMap.pinValue){
+  if (valueSignificantlyDifferent(pinValue, externalPedalMap.pinValue )){
 
     externalPedalMap.pinValue = pinValue;
 
     byte midiValue = expressionPedalToMidiKnob(pinValue);
-    Serial.print(" from pin ");
-    Serial.println(externalPedalMap.pin);
+
+    Serial.print(" expression pedal value ");
+    Serial.println(pinValue);     
     sendValueChange(externalPedalMap.control, midiValue);
   }   
+
+  
+  //delay(1000);
 }
