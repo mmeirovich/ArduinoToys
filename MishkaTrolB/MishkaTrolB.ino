@@ -43,13 +43,13 @@ pinToControl muxPinToButtonMap[] = {{B10010001, 0, 35},
                                     {B10010011, 0, 36}};
 
 
-pinToControl boardPinToButtonMap[] = {{5, 0, 37}, 
-                                      {7, 0, 38}, 
-                                      {8, 0, 39}, 
-                                      {9, 0, 40}, 
-                                      {10, 0, 41}, 
-                                      {16, 0, 42}, 
-                                      {14, 0, 43}, 
+pinToControl boardPinToButtonMap[] = {{5, 0, 43}, 
+                                      {7, 0, 39}, 
+                                      {8, 0, 38}, 
+                                      {9, 0, 37}, 
+                                      {10, 0, 40}, 
+                                      {16, 0, 41}, 
+                                      {14, 0, 42}, 
                                       {15, 0, 44}};
 
 
@@ -57,26 +57,6 @@ pinToControl boardPinToButtonMap[] = {{5, 0, 37},
 byte boardButtonsCount = 8;
 byte muxButtonsCount = 2;
 byte knobsCount = 14;
-
-
-byte controlPins[] = {B00000000,  //read from Y0
-                      B00000010,  //Y1
-                      B00000001,  //Y2
-                      B00000011,  //Y3
-                      B00010000,  //Y4
-                      B00010010,  //Y5
-                      B00010001,  //Y6
-                      B00010011,  //Y7
-                      B10000000,  //Y8
-                      B10000010,  //Y9
-                      B10000001,  //Y10
-                      B10000011,  //Y11
-                      B10010000,  //Y12
-                      B10010010,  //Y13
-                      B10010001,  //Y14 // button 1
-                      B10010011}; //Y15 // button 2
-
-
 
 void setup() {
   delay(1000);
@@ -150,10 +130,12 @@ void logPinWithInput(byte pin, int value){
 
 byte knobToMidiKnob(int knobValue){
   double relation = KNOB_MAX / MIDI_MAX;
-  return (KNOB_MAX - knobValue) / relation;  
+  return MIDI_MAX - (KNOB_MAX - knobValue) / relation;  
 }
 
-
+byte buttonToMidi(byte buttonValue){
+  return buttonValue < 200 ? 127 : 0;
+}
 // return true if two values have a serious gap between them, in our case 2 or more
 // solves the problem of false knob values changes that we discovered while experimenting
 bool valueSignificantlyDifferent(int value1, int value2){
@@ -188,6 +170,8 @@ void loop() {
     if (valueSignificantlyDifferent(pinValue, muxPinToKnobMap[i].pinValue)){
         muxPinToKnobMap[i].pinValue = pinValue;
 
+        Serial.println("mux knobs"); 
+
         byte midiValue = knobToMidiKnob(pinValue);
         logPinWithInput(muxPinToKnobMap[i].pin, pinValue);
         
@@ -197,52 +181,40 @@ void loop() {
     //delay(300);
   }
 
-
-  Serial.println("");
-  Serial.println("reading mux buttons"); 
-
   // read buttons via mux pins
   for (int i = 0; i < muxButtonsCount; i++)
   {    
     byte pinValue = readMuxPin(muxPinToButtonMap[i].pin);
-    if (valueSignificantlyDifferent(pinValue, muxPinToButtonMap[i].pinValue)){
-        muxPinToButtonMap[i].pinValue = pinValue;
+    byte midiValue = buttonToMidi(pinValue);
+    // since we use analog here for digital signal, it's better to store the digital result rather than the analog value
+    if (midiValue != muxPinToButtonMap[i].pinValue){        
 
-        byte midiValue = knobToMidiKnob(pinValue);
+      
+        muxPinToButtonMap[i].pinValue = midiValue;
+
+        
         logPinWithInput(muxPinToButtonMap[i].pin, pinValue);
         
         sendValueChange(muxPinToButtonMap[i].control, midiValue);
     }
-    //monitorData(analogRead(0), i);
-    delay(300);
   }
 
-
-
-  
-  // read buttons connected to the board
-  //Serial.println("");
-  //Serial.println("reading board buttons"); 
 
   for (int i=0; i<boardButtonsCount; i++){
     int pinValue = digitalRead(boardPinToButtonMap[i].pin);
     
     if (pinValue != boardPinToButtonMap[i].pinValue){
      
-      Serial.println(" button value changed"); 
+      Serial.println("board button"); 
       boardPinToButtonMap[i].pinValue = pinValue;
-
+      
+      byte midiValue = pinValue == 0 ? 127 : 0;
       logPinWithInput(boardPinToButtonMap[i].pin, pinValue);
-      sendButtonPress(boardPinToButtonMap[i].control, pinValue);  
-      delay(50); // to try to avoid current leakage to the analog pins
+      sendValueChange(boardPinToButtonMap[i].control, midiValue);  
+      //delay(50); // to try to avoid current leakage to the analog pins
     }
     
   }
-
- 
-    
-    
- 
 
 
   

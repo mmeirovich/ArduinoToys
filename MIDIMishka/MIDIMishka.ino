@@ -18,13 +18,14 @@ typedef struct{
   byte pin;
   int pinValue;
   byte control;
+  byte midiValue;
 } pinToControl;
 
 
-pinToControl pinToButtonMap[] = {{5, 0, 20}, {6, 0, 21}, {7, 0, 22}, {8, 0, 23}, {9, 0, 24}};
-pinToControl pinToKnobMap[] = {{18, 0, 25}, {19, 0, 26}, {20, 0, 27}, {21, 0, 28}, {10, 0, 29}};
+pinToControl pinToButtonMap[] = {{5, 0, 20, 0}, {6, 0, 21, 0}, {7, 0, 22, 0}, {8, 0, 23, 0}, {9, 0, 24, 0}};
+pinToControl pinToKnobMap[] = {{18, 0, 25, 0}, {19, 0, 26, 0}, {20, 0, 27, 0}, {21, 0, 28, 0}, {10, 0, 29, 0}};
 
-pinToControl externalPedalMap = {A6, 0, 30};
+pinToControl externalPedalMap = {A6, 0, 30, 0};
 
 byte buttonsCount = 5;
 byte knobsCount = 5;
@@ -133,8 +134,8 @@ bool valueSignificantlyDifferent(int value1, int value2){
 void loop() {
   
   // read buttons
-  Serial.println("");
-  Serial.println("reading buttons"); 
+//  Serial.println("");
+//  Serial.println("reading buttons"); 
 
   for (int i=0; i<buttonsCount; i++){
     int pinValue = digitalRead(pinToButtonMap[i].pin);
@@ -151,8 +152,8 @@ void loop() {
     
   }
 
-  Serial.println("");
-  Serial.println("reading knobs"); 
+//  Serial.println("");
+//  Serial.println("reading knobs"); 
   // read knobs
   for (int i=0; i<knobsCount; i++){
     
@@ -170,17 +171,21 @@ void loop() {
       pinToKnobMap[i].pinValue = pinValue;
   
       byte midiValue = knobToMidiKnob(pinValue);
-      logPinWithInput(pinToKnobMap[i].pin, pinValue);
+      if (midiValue != pinToKnobMap[i].midiValue){
+        logPinWithInput(pinToKnobMap[i].pin, pinValue);
+        
+        sendValueChange(pinToKnobMap[i].control, midiValue);
+        pinToKnobMap[i].midiValue = midiValue;
+      }
       
-      sendValueChange(pinToKnobMap[i].control, midiValue);
       
     }
     
     
   }
 
-  Serial.println("");
-  Serial.println("reading external expression pedal");
+//  Serial.println("");
+//  Serial.println("reading external expression pedal");
 
 
   int pinValue = analogRead(externalPedalMap.pin);
@@ -192,7 +197,12 @@ void loop() {
 
     Serial.print(" expression pedal value ");
     Serial.println(pinValue);     
-    sendValueChange(externalPedalMap.control, midiValue);
+    if (midiValue != externalPedalMap.midiValue){
+      externalPedalMap.midiValue = midiValue;
+      sendValueChange(externalPedalMap.control, midiValue);
+    }
+    
+    
   }   
 
   
