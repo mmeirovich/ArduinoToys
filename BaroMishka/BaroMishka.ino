@@ -46,14 +46,26 @@ void ShowDigits(int8_t digit1, int8_t digit2, int8_t digit3, int8_t digit4){
 
 void ShowNumber(int number){
   int8_t digits[4];  
-  Serial.print(number / 1000);
-  Serial.print(number % 1000 / 100);
-  Serial.print(number % 1000 % 100 / 10);
-  Serial.print(number % 1000 % 100 % 10);
-  
-  
-  digits[0] = number / 1000;
-  
+
+
+
+  Serial.print("Showing number ");
+  Serial.println(number);
+  Serial.println("****************");
+  Serial.println(number / 1000);
+  Serial.println(number % 1000 / 100);
+  Serial.println(number % 1000 % 100 / 10);
+  Serial.println(number % 1000 % 100 % 10);
+  Serial.println("****************");
+
+
+
+  if (number < 0){
+    digits[0] = -2;
+    number = number * -1;
+  }else{
+    digits[0] = number / 1000;
+  }
   digits[1] = number % 1000 / 100;
   digits[2] = number % 1000 % 100 / 10;
   digits[3] = number % 1000 % 100 % 10;
@@ -83,15 +95,15 @@ void setup()
 {  
     
   Serial.begin(9600);
+  display1.set(BRIGHT_TYPICAL);
+  display1.init();
+  
   if (!bme.begin(0x76, 0x58))
   {  
     Serial.println("Could not find a valid BMP280 sensor, check wiring!");
     ShowNumber(9999);
     while (1);
   }
-
-  display1.set();
-  display1.init();
 }
 
 
@@ -116,15 +128,16 @@ void loop()
 
     switch(state){
       case TEMPERATURE:
-        toDisplay = bme.readTemperature();
+        toDisplay = (int)(bme.readTemperature());
         break;
       case PRESSURE:
-        toDisplay = bme.readPressure();
+        toDisplay = (int)(bme.readPressure() / 100 );
         break;
       case ALTITUDE:
-        toDisplay = bme.readAltitude(PRESSURE_CALIBRATION);
+        toDisplay = (int)(bme.readAltitude(PRESSURE_CALIBRATION));
         break;
     }
+    
     ShowNumber(toDisplay);
     delay(5000);
     NextState();
